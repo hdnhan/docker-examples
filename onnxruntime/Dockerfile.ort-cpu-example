@@ -1,0 +1,41 @@
+FROM ubuntu:22.04 AS build
+# ONNXRuntime dependency
+ENV ORT_INSTALL_DIR /onnxruntime
+COPY --from=hdnhan/onnxruntime:1.14.1-cpu-ubuntu22.04 $ORT_INSTALL_DIR $ORT_INSTALL_DIR
+# OpenCV dependency
+ENV OPENCV_INSTALL_DIR /opencv
+COPY --from=hdnhan/opencv:4.7.0-cpu-ubuntu22.04 $OPENCV_INSTALL_DIR $OPENCV_INSTALL_DIR
+
+# Install essential packages
+RUN apt-get update
+RUN apt-get install -y cmake build-essential python3 python3-pip
+RUN pip install -U pip
+RUN pip install torch==1.12.1 torchvision==0.13.1
+
+# Install project binaries/libraries
+RUN apt-get install -y vim
+ENV EX_INSTALL_DIR /example
+COPY example /tmp/example
+RUN python3 /tmp/example/generate_model.py
+
+RUN cd /tmp/example && \
+    cmake -DCMAKE_PREFIX_PATH=$OPENCV_INSTALL_DIR -DORT_INSTALL_DIR=$ORT_INSTALL_DIR -DCMAKE_INSTALL_PREFIX=$EX_INSTALL_DIR . && \
+    make -j$(nproc) && make install && ldconfig
+
+
+FROM ubuntu:22.04 AS binary
+# ONNXRuntime dependency
+ENV ORT_INSTALL_DIR /onnxruntime
+ENV LD_LIBRARY_PATH=$ORT_INSTALL_DIR/lib:$LD_LIBRARY_PATH
+COPY --from=hdnhan/onnxruntime:1.14.1-cpu-ubuntu22.04 $ORT_INSTALL_DIR $ORT_INSTALL_DIR
+
+# OpenCV dependency
+ENV OPENCV_INSTALL_DIR /opencv
+ENV LD_LIBRARY_PATH=$OPENCV_INSTALL_DIR/lib:$LD_LIBRARY_PATH
+COPY --from=hdnhan/opencv:4.7.0-cpu-ubuntu22.04 $OPENCV_INSTALL_DIR $OPENCV_INSTALL_DIR
+
+
+ENV EX_INSTALL_DIR /example
+ENV PATH=$EX_INSTALL_DIR/bin:$PATH
+COPY --from=build $EX_INSTALL_DIR $EX_INSTALL_DIR
+COPY --from=build /model.onnx /model.onnx

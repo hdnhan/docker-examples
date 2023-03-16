@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package tunnel;
+
+service BenchService {
+  rpc StreamData (stream Request) returns (stream Response) {}
+}
+
+message Request {
+  string data = 1;
+}
+
+message Response {
+  string data = 1;
+}
