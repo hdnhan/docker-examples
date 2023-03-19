@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package tunnel;
+
+service BenchService {
+  rpc doInference (Request) returns (Response) {}
+}
+
+message Request {
+  bytes data = 1;
+  uint32 height = 2;
+  uint32 width = 3;
+}
+
+message Response {
+  uint32 prediction = 1; // class index
+  float probability = 2; // confidence
+}
+

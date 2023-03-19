@@ -1,25 +1,41 @@
+#include <grpcpp/grpcpp.h>
+#include <signal.h>
+
 #include <chrono>
+#include <exception>
 #include <iostream>
+#include <memory>
 #include <numeric>
 #include <opencv2/opencv.hpp>
 #include <optional>
-#include <thread>
+#include <string>
 
 #include "onnxruntime_cxx_api.h"
+#include "tunnel.grpc.pb.h"
+
+std::unique_ptr<grpc::Server> server;
+
+// Signal handler function for SIGINT
+void signalHandler(int signal) {
+    std::cout << "Received SIGINT, shutting down server..." << std::endl;
+    // Shut down the gRPC server gracefully
+    server->Shutdown();
+    // Exit the program
+    exit(0);
+}
 
 class OrtInference {
    public:
+    OrtInference() = default;
     OrtInference(const std::string& model_path, const cv::Scalar& mean, const cv::Scalar& sd)
         : mean(mean), sd(sd) {
         // Create an ONNX Runtime session and load the model
         env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "LOG");
         Ort::SessionOptions options;
-        /*
-        Tried 0 -> std::thread::hardware_concurrency(), it seems 4 works the
-        best?
-        */
+
         options.SetIntraOpNumThreads(4);
         options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+        options.DisableProfiling();
         session = Ort::Session(env, model_path.c_str(), options);
 
         // Assume that we only have an input and an output
@@ -134,32 +150,56 @@ class OrtInference {
     float scale = 1.0 / 255;
 };
 
-int main() {
-    int h = 512, w = 512;
-    cv::Scalar mean(0.485, 0.456, 0.406);
-    cv::Scalar sd(0.229, 0.224, 0.225);
-    OrtInference sess("/model.onnx", mean, sd);
+class BenchServiceImpl final : public tunnel::BenchService::Service {
+   public:
+    BenchServiceImpl() {
+        cv::Scalar mean(0.485, 0.456, 0.406);
+        cv::Scalar sd(0.229, 0.224, 0.225);
+        sess = OrtInference("/server/model.onnx", mean, sd);
+    };
 
-    int ntimes = 1000;
-    double total = 0;
-    for (int i = 0; i < ntimes; ++i) {
-        // Generate an image using OpenCV
-        cv::Mat image(h, w, CV_8UC3);
-        cv::randu(image, cv::Scalar(0, 0, 0), cv::Scalar(255, 255, 255));
+   private:
+    OrtInference sess;
+    grpc::Status doInference(grpc::ServerContext* context, const tunnel::Request* request,
+                             tunnel::Response* response) override {
+        cv::Mat image(request->height(), request->width(), CV_8UC3, (void*)request->data().data());
 
         auto start = std::chrono::high_resolution_clock::now();
-
         sess.preprocess(image);
         sess.inference();
-        auto [pred, prob] = sess.postprocess();
-
+        auto [idx, val] = sess.postprocess();
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end - start;
-        total += diff.count();
 
-        // std::cout << "Prediction: " << pred << " - Probability: " << prob << std::endl;
+        std::cout << "Pre/Infer/Post(Cpp): " << diff.count() << std::endl;
+        response->set_prediction(idx);
+        response->set_probability(val);
+        return grpc::Status::OK;
     }
-    std::cout << "ONNXRuntime (CPU): " << total / ntimes << std::endl;
+};
 
+void RunServer() {
+    std::string server_address("0.0.0.0:50052");
+    BenchServiceImpl service;
+
+    grpc::ServerBuilder builder;
+    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+    builder.RegisterService(&service);
+
+    server = builder.BuildAndStart();
+    std::cout << "Server listening on " << server_address << std::endl;
+
+    // Set up the signal handler for SIGINT
+    struct sigaction sigIntHandler;
+    sigIntHandler.sa_handler = signalHandler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    sigaction(SIGINT, &sigIntHandler, NULL);
+
+    server->Wait();
+}
+
+int main() {
+    RunServer();
     return 0;
 }

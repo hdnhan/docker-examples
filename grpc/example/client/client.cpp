@@ -13,7 +13,8 @@ class BenchClient {
 
     void StreamData() {
         grpc::ClientContext context;
-        std::shared_ptr<grpc::ClientReaderWriter<tunnel::Request, tunnel::Response>> stream(stub_->StreamData(&context));
+        std::shared_ptr<grpc::ClientReaderWriter<tunnel::Request, tunnel::Response>> stream(
+            stub_->StreamData(&context));
 
         for (int i = 0; i < 1000; i++) {
             tunnel::Request request;

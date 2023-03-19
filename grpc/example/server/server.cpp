@@ -7,7 +7,9 @@
 #include "tunnel.grpc.pb.h"
 
 class BenchServiceImpl final : public tunnel::BenchService::Service {
-    grpc::Status StreamData(grpc::ServerContext* context, grpc::ServerReaderWriter<tunnel::Response, tunnel::Request>* stream) override {
+    grpc::Status StreamData(
+        grpc::ServerContext* context,
+        grpc::ServerReaderWriter<tunnel::Response, tunnel::Request>* stream) override {
         tunnel::Request request;
         while (stream->Read(&request)) {
             tunnel::Response response;

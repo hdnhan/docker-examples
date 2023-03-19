@@ -3,11 +3,8 @@
 #include <numeric>
 #include <opencv2/opencv.hpp>
 
-std::vector<cv::Mat> transforms(const std::vector<cv::Mat>& images,
-                                const std::vector<int> &shape,
-                                const cv::Scalar& mean,
-                                const cv::Scalar& std,
-                                const float& scale) {
+std::vector<cv::Mat> transforms(const std::vector<cv::Mat>& images, const std::vector<int>& shape,
+                                const cv::Scalar& mean, const cv::Scalar& std, const float& scale) {
     std::vector<cv::Mat> transformed;
     for (cv::Mat image : images) {
         int height = image.rows;
