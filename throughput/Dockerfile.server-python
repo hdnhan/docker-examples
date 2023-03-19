@@ -15,4 +15,4 @@ COPY server server
 COPY proto proto
 
 RUN cd /proto && python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. tunnel.proto
-CMD [ "python3 server/server.py" ]
+CMD ["python3", "server/server.py"]

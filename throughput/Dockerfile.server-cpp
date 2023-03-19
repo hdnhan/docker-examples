@@ -30,5 +30,4 @@ COPY --from=hdnhan/opencv:4.7.0-cpu $OPENCV_INSTALL_DIR $OPENCV_INSTALL_DIR
 COPY --from=genonnx /model.onnx server/model.onnx
 COPY --from=build /bin/server /bin/server
 COPY --from=build /lib/libtunnel.so /lib/libtunnel.so
-
-CMD [ "bin/server" ]
+CMD ["bin/server"]
