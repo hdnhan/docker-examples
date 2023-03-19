@@ -16,7 +16,7 @@ docker build -t pyclient -f Dockerfile.client-python .
 docker build -t genonnx -f Dockerfile.gen-onnx .
 
 # Build image for python server
-docker run -it --rm --network host pyserver python3 /server/server.py
+docker build -t pyserver -f Dockerfile.server-python .
 
 # Build image for cpp server
 docker build -t cppserver -f Dockerfile.server-cpp .
