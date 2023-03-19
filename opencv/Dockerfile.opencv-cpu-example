@@ -1,7 +1,7 @@
 FROM ubuntu:22.04 AS build
 # OpenCV dependency
 ENV OPENCV_INSTALL_DIR /opencv
-COPY --from=hdnhan/opencv:4.7.0-cpu-ubuntu22.04 $OPENCV_INSTALL_DIR $OPENCV_INSTALL_DIR
+COPY --from=hdnhan/opencv:4.7.0-cpu $OPENCV_INSTALL_DIR $OPENCV_INSTALL_DIR
 
 # Install essential packages
 RUN apt-get update
@@ -19,7 +19,7 @@ FROM ubuntu:22.04 AS binary
 # OpenCV dependency
 ENV OPENCV_INSTALL_DIR /opencv
 ENV LD_LIBRARY_PATH=$OPENCV_INSTALL_DIR/lib:$LD_LIBRARY_PATH
-COPY --from=hdnhan/opencv:4.7.0-cpu-ubuntu22.04 $OPENCV_INSTALL_DIR $OPENCV_INSTALL_DIR
+COPY --from=hdnhan/opencv:4.7.0-cpu $OPENCV_INSTALL_DIR $OPENCV_INSTALL_DIR
 
 ENV EX_INSTALL_DIR /example
 ENV PATH=$EX_INSTALL_DIR/bin:$PATH

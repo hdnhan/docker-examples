@@ -1,13 +1,13 @@
 FROM ubuntu:22.04 AS build
 # gRPC and protobuf dependencies
 ENV GRPC_INSTALL_DIR /grpc
-COPY --from=hdnhan/grpc:1.48.4-ubuntu22.04 $GRPC_INSTALL_DIR $GRPC_INSTALL_DIR
+COPY --from=hdnhan/grpc:1.48.4 $GRPC_INSTALL_DIR $GRPC_INSTALL_DIR
 # ONNXRuntime dependency
 ENV ORT_INSTALL_DIR /onnxruntime
-COPY --from=hdnhan/onnxruntime:1.14.1-cpu-ubuntu22.04 $ORT_INSTALL_DIR $ORT_INSTALL_DIR
+COPY --from=hdnhan/onnxruntime:1.14.1-cpu $ORT_INSTALL_DIR $ORT_INSTALL_DIR
 # OpenCV dependency
 ENV OPENCV_INSTALL_DIR /opencv
-COPY --from=hdnhan/opencv:4.7.0-cpu-ubuntu22.04 $OPENCV_INSTALL_DIR $OPENCV_INSTALL_DIR
+COPY --from=hdnhan/opencv:4.7.0-cpu $OPENCV_INSTALL_DIR $OPENCV_INSTALL_DIR
 
 RUN apt-get update
 RUN apt-get install -y cmake build-essential
@@ -21,12 +21,14 @@ FROM ubuntu:22.04 AS binary
 # ONNXRuntime dependency
 ENV ORT_INSTALL_DIR /onnxruntime
 ENV LD_LIBRARY_PATH=$ORT_INSTALL_DIR/lib:$LD_LIBRARY_PATH
-COPY --from=hdnhan/onnxruntime:1.14.1-cpu-ubuntu22.04 $ORT_INSTALL_DIR $ORT_INSTALL_DIR
+COPY --from=hdnhan/onnxruntime:1.14.1-cpu $ORT_INSTALL_DIR $ORT_INSTALL_DIR
 # OpenCV dependency
 ENV OPENCV_INSTALL_DIR /opencv
 ENV LD_LIBRARY_PATH=$OPENCV_INSTALL_DIR/lib:$LD_LIBRARY_PATH
-COPY --from=hdnhan/opencv:4.7.0-cpu-ubuntu22.04 $OPENCV_INSTALL_DIR $OPENCV_INSTALL_DIR
+COPY --from=hdnhan/opencv:4.7.0-cpu $OPENCV_INSTALL_DIR $OPENCV_INSTALL_DIR
 
 COPY --from=genonnx /model.onnx server/model.onnx
 COPY --from=build /bin/server /bin/server
 COPY --from=build /lib/libtunnel.so /lib/libtunnel.so
+
+CMD [ "bin/server" ]

@@ -26,13 +26,13 @@ docker build -t cppserver -f Dockerfile.server-cpp .
 ### First, start server
 ```bash
 # Python
-docker run -it --rm --network host pyserver python3 /server/server.py
+docker run -it --rm --network host pyserver
 
 # Or Cpp
-docker run -it --rm --network host cppserver bin/server
+docker run -it --rm --network host cppserver
 ```
 
 ### Star client
 ```bash
-docker run -it --rm --network host pyclient python3 /client/client.py
+docker run -it --rm --network host pyclient
 ```
