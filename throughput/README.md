@@ -1,10 +1,10 @@
 # Benchmark scenario
 ## Client
 - Generate a 8uc3 image
-- Make a request of running inference on these images on server
+- Make a request of running inference on the image on server
 
 ## Server
-- Run inference on the image recived from client.
+- Run inference on the image received from client.
 
 # Setup
 ## Build images
@@ -16,7 +16,7 @@ docker build -t pyclient -f Dockerfile.client-python .
 docker build -t genonnx -f Dockerfile.gen-onnx .
 
 # Build image for python server
-docker build -t pyserver -f Dockerfile.server-python .
+docker run -it --rm --network host pyserver python3 /server/server.py
 
 # Build image for cpp server
 docker build -t cppserver -f Dockerfile.server-cpp .

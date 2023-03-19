@@ -20,6 +20,7 @@ class OrtInference {
         */
         options.SetIntraOpNumThreads(4);
         options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+        options.DisableProfiling();
         session = Ort::Session(env, model_path.c_str(), options);
 
         // Assume that we only have an input and an output
@@ -140,26 +141,37 @@ int main() {
     cv::Scalar sd(0.229, 0.224, 0.225);
     OrtInference sess("/model.onnx", mean, sd);
 
-    int ntimes = 1000;
-    double total = 0;
+    int ntimes = 100;
+    double t_pre = 0, t_model = 0, t_post = 0;
+    std::chrono::high_resolution_clock::time_point start, end;
+    std::chrono::duration<double> diff;
     for (int i = 0; i < ntimes; ++i) {
         // Generate an image using OpenCV
         cv::Mat image(h, w, CV_8UC3);
         cv::randu(image, cv::Scalar(0, 0, 0), cv::Scalar(255, 255, 255));
 
-        auto start = std::chrono::high_resolution_clock::now();
-
+        start = std::chrono::high_resolution_clock::now();
         sess.preprocess(image);
-        sess.inference();
-        auto [pred, prob] = sess.postprocess();
+        end = std::chrono::high_resolution_clock::now();
+        diff = end - start;
+        t_pre += diff.count();
 
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> diff = end - start;
-        total += diff.count();
+        start = std::chrono::high_resolution_clock::now();
+        sess.inference();
+        end = std::chrono::high_resolution_clock::now();
+        diff = end - start;
+        t_model += diff.count();
+
+        start = std::chrono::high_resolution_clock::now();
+        auto [pred, prob] = sess.postprocess();
+        end = std::chrono::high_resolution_clock::now();
+        diff = end - start;
+        t_post += diff.count();
 
         // std::cout << "Prediction: " << pred << " - Probability: " << prob << std::endl;
     }
-    std::cout << "ONNXRuntime (CPU): " << total / ntimes << std::endl;
+    std::cout << "ONNXRuntime (CPU): t_pre " << t_pre / ntimes << ", t_model " << t_model / ntimes
+              << ", t_post " << t_post / ntimes << std::endl;
 
     return 0;
 }
